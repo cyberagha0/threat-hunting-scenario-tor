@@ -16,11 +16,8 @@
         T H R E A T   H U N T   R E P O R T
      Unauthorized TOR Browser Installation & Use
 ```
-
-![Platform]
-![KQL]
-![ATT&CK]
-![Result]
+**Platform** `Microsoft Defender for Endpoint` &nbsp;·&nbsp; **Query Language** `KQL`
+**MITRE ATT&CK** `T1090.003 — Proxy: Multi-hop Proxy` &nbsp;·&nbsp; **Result** `Confirmed True Positive`
 
 - [Scenario Creation](https://github.com/cyberagha0/threat-hunting-scenario-tor/blob/main/threat-hunting-scenario-tor-event-creation.md)
 
