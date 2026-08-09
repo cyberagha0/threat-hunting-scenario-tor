@@ -17,12 +17,11 @@
      Unauthorized TOR Browser Installation & Use
 ```
 
-![Platform](https://img.shields.io/badge/Platform-Microsoft_Defender_for_Endpoint-0078D4?style=for-the-badge&logo=microsoft&logoColor=white)
-![KQL](https://img.shields.io/badge/Query_Language-KQL-7D4698?style=for-the-badge)
-![ATT&CK](https://img.shields.io/badge/MITRE_ATT%26CK-T1090.003-C41E3A?style=for-the-badge)
-![Result](https://img.shields.io/badge/Result-Confirmed_True_Positive-2EA043?style=for-the-badge)
+![Platform]
+![KQL]
+![ATT&CK]
+![Result]
 
-# Threat Hunt Report: Unauthorized TOR Usage
 - [Scenario Creation](https://github.com/cyberagha0/threat-hunting-scenario-tor/blob/main/threat-hunting-scenario-tor-event-creation.md)
 
 ## Platforms and Languages Leveraged
