@@ -102,61 +102,102 @@ Searched the DeviceNetworkEvents table for any indication the tor browser was us
 
 ## Chronological Event Timeline 
 
-### 1. File Download - TOR Installer
+# Threat Hunt: Unauthorized TOR Browser Usage
 
-- **Timestamp:** `2024-11-08T22:14:48.6065231Z`
-- **Event:** The user "employee" downloaded a file named `tor-browser-windows-x86_64-portable-14.0.1.exe` to the Downloads folder.
-- **Action:** File download detected.
-- **File Path:** `C:\Users\employee\Downloads\tor-browser-windows-x86_64-portable-14.0.1.exe`
+**Endpoint:** `corp-sda1-hs12` | **User:** `mleahy` | **Platform:** Microsoft Defender for Endpoint (KQL)
+**Tables queried:** `DeviceFileEvents` · `DeviceProcessEvents` · `DeviceNetworkEvents`
+**Incident window:** Aug 1, 2026 11:34 PM – Aug 2, 2026 8:35 PM (EDT — add 4 hours for UTC)
 
-### 2. Process Execution - TOR Browser Installation
+---
 
-- **Timestamp:** `2024-11-08T22:16:47.4484567Z`
-- **Event:** The user "employee" executed the file `tor-browser-windows-x86_64-portable-14.0.1.exe` in silent mode, initiating a background installation of the TOR Browser.
-- **Action:** Process creation detected.
-- **Command:** `tor-browser-windows-x86_64-portable-14.0.1.exe /S`
-- **File Path:** `C:\Users\employee\Downloads\tor-browser-windows-x86_64-portable-14.0.1.exe`
+## Chronological Events
 
-### 3. Process Execution - TOR Browser Launch
+### Acquisition & Installation
 
-- **Timestamp:** `2024-11-08T22:17:21.6357935Z`
-- **Event:** User "employee" opened the TOR browser. Subsequent processes associated with TOR browser, such as `firefox.exe` and `tor.exe`, were also created, indicating that the browser launched successfully.
-- **Action:** Process creation of TOR browser-related executables detected.
-- **File Path:** `C:\Users\employee\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe`
+| # | Time (EDT) | Table | Event |
+|:--|:--|:--|:--|
+| 1 | Aug 1 · 11:34:26 PM | File | Installer downloaded to `C:\Users\mleahy\Downloads\tor-browser-windows-x86_64-portable-15.0.19.exe`. `FileRenamed` marks the download completing (`.part` → final), fixing the true start of the incident. This is the **portable** build — no installer privileges required. |
+| 2 | Aug 1 · 11:34:35 PM | Process / File | First execution, command line with **no arguments**. In the same second a `FileDeleted` removes the installer from Downloads — the extraction self-cleans, which is why the file is absent on disk today. |
+| 3 | Aug 1 · 11:37:29 PM | Process | Re-executed with the **`/S` silent flag** — suppresses all prompts and the install-location dialog. Three minutes of idle time separate this from the first run. |
+| 4 | Aug 1 · 11:37:40 PM | File | Payload written to `C:\Users\mleahy\Desktop\Tor Browser\`, including `Browser\TorBrowser\Tor\tor.exe` and bundled license docs (`tor.txt`, `Torbutton.txt`, `Tor-Launcher.txt`). Desktop install path confirms **no admin rights were needed**. |
+| 5 | Aug 1 · 11:37:45 PM | File | Desktop shortcut `Tor Browser.lnk` created. |
 
-### 4. Network Connection - TOR Network
+### Execution
 
-- **Timestamp:** `2024-11-08T22:18:01.1246358Z`
-- **Event:** A network connection to IP `176.198.159.33` on port `9001` by user "employee" was established using `tor.exe`, confirming TOR browser network activity.
-- **Action:** Connection success.
-- **Process:** `tor.exe`
-- **File Path:** `c:\users\employee\desktop\tor browser\browser\torbrowser\tor\tor.exe`
+| # | Time (EDT) | Table | Event |
+|:--|:--|:--|:--|
+| 6 | Aug 1 · 11:37:53 PM | Process | `firefox.exe` launched from `…\Desktop\Tor Browser\Browser\` (build ID `20260720080000`) — **8 seconds after install**. |
+| 7 | Aug 1 · 11:37:54–57 PM | File | `storage.sqlite` and `storage-sync-v2.sqlite` written to `…\Data\Browser\profile.default\` — first-run profile creation, confirming a fresh install rather than a pre-staged copy. |
+| 8 | Aug 1 · 11:37:56 PM | Process | `tor.exe` spawned by the browser with `-f …\Data\Tor\torrc`, `+__ControlPort 127.0.0.1:9151`, `+__SocksPort 127.0.0.1:9150`, and **`DisableNetwork 1`**. That flag is why no traffic leaves yet — it explains the ~25-second gap before event 10. |
 
-### 5. Additional Network Connections - TOR Browser Activity
+### Network — TOR Connection Established
 
-- **Timestamps:**
-  - `2024-11-08T22:18:08Z` - Connected to `194.164.169.85` on port `443`.
-  - `2024-11-08T22:18:16Z` - Local connection to `127.0.0.1` on port `9150`.
-- **Event:** Additional TOR network connections were established, indicating ongoing activity by user "employee" through the TOR browser.
-- **Action:** Multiple successful connections detected.
+| # | Time (EDT) | Table | Event |
+|:--|:--|:--|:--|
+| 9 | Aug 1 · 11:37:57 PM | Network | `ConnectionSuccess` — `firefox.exe` → `127.0.0.1:9151`. Browser takes control of the TOR daemon and lifts `DisableNetwork`. |
+| 10 | Aug 1 · 11:38:22–24 PM | Network | Three `ConnectionSuccess` events from `tor.exe` on **port 443** to `204.13.164.118`, `185.107.83.1`, `192.42.116.93`. Port 443 blends with normal HTTPS — **a port-based egress rule would not have caught these**. |
+| 11 | Aug 1 · 11:38:25 PM | Network | `ConnectionSuccess` — `firefox.exe` → `127.0.0.1:9150` (SOCKS). From this point user web traffic exits via the TOR circuit, not the corporate proxy. |
+| 12 | Aug 1 · 11:38:32 PM & 11:39:20 PM | Network | `tor.exe` → `70.134.248.71:9001`, both `ConnectionSuccess`. Port 9001 is the TOR **ORPort** — the single strongest and least ambiguous network indicator in this hunt. |
 
-### 6. File Creation - TOR Shopping List
+### Sustained Use
 
-- **Timestamp:** `2024-11-08T22:27:19.7259964Z`
-- **Event:** The user "employee" created a file named `tor-shopping-list.txt` on the desktop, potentially indicating a list or notes related to their TOR browser activities.
-- **Action:** File creation detected.
-- **File Path:** `C:\Users\employee\Desktop\tor-shopping-list.txt`
+| # | Time (EDT) | Table | Event |
+|:--|:--|:--|:--|
+| 13 | Aug 1 · 11:38:35–11:40:41 PM | Process | ~10 `firefox.exe -contentproc -isForBrowser` children spawn, all sharing `-parentPid 14140`. Content processes map to tabs — real page loading over ~3 minutes, not an idle window. |
+| 14 | Aug 1 · 11:45:05–06 PM | Process | Fresh `firefox.exe` (bare command line = new launch, not a tab) followed one second later by a new `tor.exe`. The browser was **closed and deliberately reopened** — repeat use. |
+| 15 | Aug 1 · 11:56:29 PM | File | `tor-shopping-list.txt` created in `C:\Users\mleahy\Documents\`, alongside `tor-shopping-list.lnk` in `…\Windows\Recent\`. The Recent shortcut confirms the file was **opened by the user**, not merely written. |
+| 16 | Aug 1 · 11:56:42 PM | File | Same filename with an **identical SHA-256** created on the Desktop — proving a copy, not a second document. |
+
+### Follow-On Activity (Next Day)
+
+| # | Time (EDT) | Table | Event |
+|:--|:--|:--|:--|
+| 17 | Aug 2 · 8:35:25 PM | File | `Tor Browser.lnk` created in `…\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\` — moving the shortcut into the Start Menu indicates intent to keep using it. |
+| 18 | Aug 2 · 8:35:28 PM | File | `FileDeleted` on `…\TorBrowser\Tor\tor.exe`, **three seconds** after the shortcut was created. Install-for-convenience then immediately remove the core binary is contradictory and warrants a direct interview. |
 
 ---
 
 ## Summary
 
-The user "employee" on the "threat-hunt-lab" device initiated and completed the installation of the TOR browser. They proceeded to launch the browser, establish connections within the TOR network, and created various files related to TOR on their desktop, including a file named `tor-shopping-list.txt`. This sequence of activities indicates that the user actively installed, configured, and used the TOR browser, likely for anonymous browsing purposes, with possible documentation in the form of the "shopping list" file.
+User `mleahy` downloaded, silently installed, and actively used the TOR Browser on `corp-sda1-hs12` on the night of August 1, 2026.
+
+The portable build and `/S` flag meant **no admin rights and no prompts**. Within a minute of launch, the TOR client connected out to external infrastructure on ports **443 and 9001** and the browser bound to the local SOCKS proxy — so the connection **succeeded**, and that session's traffic left the network anonymized, outside proxy, filtering, and DLP visibility.
+
+Usage was sustained rather than exploratory: about ten tabs over three minutes, a deliberate second launch at 11:45 PM, and a `tor-shopping-list.txt` file created in Documents, opened, and copied to the Desktop. The next evening a Start Menu shortcut was added and `tor.exe` was deleted.
+
+All three IoC checks returned positive and corroborate one another across file, process, and network telemetry.
+
+---
+
+## Indicators of Compromise
+
+| Type | Value | Context |
+|:--|:--|:--|
+| SHA-256 | `0d4cc3a7b734a10c500217fb0df89452ee39185709193966831677bbd43c98f8` | TOR Browser installer |
+| SHA-256 | `ec7708e0b43e0e00b1533d11ed3ca244e6f11cb2a7b62d319ad73a7b13123033` | `tor.exe` |
+| SHA-256 | `d3bd730d253ca068f78561394c0097a8fd40210eb60d864574c1821b2c1c9de7` | `firefox.exe` (TOR build) |
+| SHA-256 | `e9d82e62acc7c4f2f87151556e6c6bd9961bf89a603f80b3368e77781b7eab67` | `tor-shopping-list.txt` (both copies) |
+| IP:Port | `204.13.164.118:443`, `185.107.83.1:443`, `192.42.116.93:443` | Outbound from `tor.exe` |
+| IP:Port | `70.134.248.71:9001` | TOR relay ORPort |
+| Path | `C:\Users\mleahy\Desktop\Tor Browser\` | Install directory |
 
 ---
 
 ## Response Taken
 
-TOR usage was confirmed on the endpoint `threat-hunt-lab` by the user `employee`. The device was isolated, and the user's direct manager was notified.
+TOR usage was confirmed on endpoint `corp-sda1-hs12`. The device was **isolated** and the user's **direct manager was notified**.
+
+### Recommended Follow-Up
+
+- [ ] Preserve both copies of `tor-shopping-list.txt` and the Desktop `Tor Browser` directory before reimaging; review contents.
+- [ ] Block the installer and `tor.exe` hashes as Defender custom indicators.
+- [ ] Validate the four external IPs against the public TOR relay consensus, then add TOR ports to egress deny rules.
+- [ ] Interview the user about the Aug 2 deletion of `tor.exe` and confirm no other copy remains on the host.
+- [ ] Run the same IoCs tenant-wide — management reported TOR entry-node traffic, so this host may not be the only one.
+- [ ] Review application control (WDAC/AppLocker): a standard user installed and ran unapproved software from the Desktop.
 
 ---
+
+## Note on Query Scope
+
+The `FileName contains "tor"` filter also returns unrelated files whose names contain the substring — `TS_DiagnosticHistory.ps1`, `SessionRestoreLog`, Edge `History`, `editor.html`. These were excluded from the timeline. A tighter filter (`FileName has "tor"`, or an explicit name/path list) reduces that noise in future hunts.
