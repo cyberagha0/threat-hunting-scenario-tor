@@ -197,7 +197,3 @@ TOR usage was confirmed on endpoint `corp-sda1-hs12`. The device was **isolated*
 - [ ] Review application control (WDAC/AppLocker): a standard user installed and ran unapproved software from the Desktop.
 
 ---
-
-## Note on Query Scope
-
-The `FileName contains "tor"` filter also returns unrelated files whose names contain the substring — `TS_DiagnosticHistory.ps1`, `SessionRestoreLog`, Edge `History`, `editor.html`. These were excluded from the timeline. A tighter filter (`FileName has "tor"`, or an explicit name/path list) reduces that noise in future hunts.
