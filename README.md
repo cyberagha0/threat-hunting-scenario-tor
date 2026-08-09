@@ -1,5 +1,26 @@
 
-<img width="400" src="https://github.com/user-attachments/assets/44bac428-01bb-4fe9-9d85-96cba7698bee" alt="Tor Logo with the onion and a crosshair on it"/>
+```
+█████████        \  |  /               ████████
+█████████         \ | /         _      █████████
+   ███             \|/        .( ).    ███   ███
+   ███          .---'---.    ( -+- )   ███   ███
+   ███        .'         '.   '(_)'    █████████
+   ███       /  .-------.  \           ████████
+   ███      |  /  .---.  \  |          ███  ███
+   ███      |  |  ( o )  |  |          ███   ███
+   ███      |  \  '---'  /  |          ███   ███
+   ███       \  '-------'  /           ███   ███
+   ███        '.         .'            ███   ███
+   ███          '-------'              ███   ███
+
+        T H R E A T   H U N T   R E P O R T
+     Unauthorized TOR Browser Installation & Use
+```
+
+![Platform](https://img.shields.io/badge/Platform-Microsoft_Defender_for_Endpoint-0078D4?style=for-the-badge&logo=microsoft&logoColor=white)
+![KQL](https://img.shields.io/badge/Query_Language-KQL-7D4698?style=for-the-badge)
+![ATT&CK](https://img.shields.io/badge/MITRE_ATT%26CK-T1090.003-C41E3A?style=for-the-badge)
+![Result](https://img.shields.io/badge/Result-Confirmed_True_Positive-2EA043?style=for-the-badge)
 
 # Threat Hunt Report: Unauthorized TOR Usage
 - [Scenario Creation](https://github.com/cyberagha0/threat-hunting-scenario-tor/blob/main/threat-hunting-scenario-tor-event-creation.md)
