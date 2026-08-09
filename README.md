@@ -5,7 +5,7 @@
 - [Scenario Creation](https://github.com/cyberagha0/threat-hunting-scenario-tor/blob/main/threat-hunting-scenario-tor-event-creation.md)
 
 ## Platforms and Languages Leveraged
-- Windows 10 Virtual Machines (Microsoft Azure)
+- Windows 11 Virtual Machines (Microsoft Azure)
 - EDR Platform: Microsoft Defender for Endpoint
 - Kusto Query Language (KQL)
 - Tor Browser
@@ -26,20 +26,21 @@ Management suspects that some employees may be using TOR browsers to bypass netw
 
 ### 1. Searched the `DeviceFileEvents` Table
 
-Searched for any file that had the string "tor" in it and discovered what looks like the user "employee" downloaded a TOR installer, did something that resulted in many TOR-related files being copied to the desktop, and the creation of a file called `tor-shopping-list.txt` on the desktop at `2024-11-08T22:27:19.7259964Z`. These events began at `2024-11-08T22:14:48.6065231Z`.
+Searched for any file that had the string "tor" in it and discovered what looks like the user "mleahy" (fictional suspected employee) downloaded a TOR installer, did something that resulted in many TOR-related files being copied to the desktop, and the creation of a file called `tor-shopping-list.txt` on the desktop at `2026-08-02T03:56:29.9529335Z`. These events began at `2026-08-02T03:37:29.4946339Z`.
 
 **Query used to locate events:**
 
 ```kql
 DeviceFileEvents  
-| where DeviceName == "threat-hunt-lab"  
-| where InitiatingProcessAccountName == "employee"  
-| where FileName contains "tor"  
+| where DeviceName == "corp-sda1-hs12"
+| where InitiatingProcessAccountName == "mleahy"
+| where FileName =~ "tor.exe" or FolderPath contains "Tor Browser"
 | where Timestamp >= datetime(2024-11-08T22:14:48.6065231Z)  
 | order by Timestamp desc  
 | project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA256, Account = InitiatingProcessAccountName
 ```
-<img width="1212" alt="image" src="https://github.com/user-attachments/assets/71402e84-8767-44f8-908c-1805be31122d">
+
+<img width="941" height="758" alt="image" src="https://github.com/user-attachments/assets/46a365fd-d2b1-4fdc-8bab-03a4b29d6c53" />
 
 ---
 
